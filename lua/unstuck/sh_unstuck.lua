@@ -27,15 +27,15 @@ Unstuck.Configuration = {
 	},
 	
 	// Allow the debug information to be sent only to the ranked admins.
-	DebugAdminRanksOnly = true, 
+	DebugAdminRanksOnly = false, 
 	
 	// If the unstuck fails, the player will be be respawned.
-	RespawnOnFail = true,
+	RespawnOnFail = false,
 	// The time in seconds between the failed message and respawning the player. 
 	RespawnTimer = 3,
 	
 	// Cooldown between each unstuck attempt in seconds.
-	Cooldown = 5,
+	Cooldown = 10,
 	
 	// How many iterations of position checking. Initial iteration is to check the surrounding player.
 	// Every iteration after that checks the surrounding checked positions.
@@ -43,7 +43,7 @@ Unstuck.Configuration = {
 	MaxIteration = 3, 
 	
 	// The minimum distance from the player when checking for new positions to move to.
-	// The addon would otherwise use a value based on the players hull if it's greater than this value.
+	// The addon would otherwise use a value based on the players hull if its greater than this value.
 	MinCheckRange = 32,
 }
 
@@ -120,6 +120,41 @@ if SERVER then
 		end
 		
 		net.Send( self )
+	end
+
+	--[[------------------------------------------------
+		Name: PushOnUnstuck()
+		Desc: pushes player a little if he is unstuck
+			(cheatsy)
+	--]]------------------------------------------------
+	function Player:PushOnUnstuck()
+		if self:GetMoveType() == MOVETYPE_OBSERVER or not self:Alive() then
+			return
+		end
+		
+		self:UnstuckMessage( Unstuck.Enumeration.Message.UNSTUCK_ATTEMPT )
+		self:Freeze( true )
+		
+		timer.Create( "UnstuckPush", 3, 1, function()
+			if not self then
+				return
+			end
+
+			self:Freeze( false )
+			
+			if self:GetMoveType() ~= MOVETYPE_OBSERVER and self:Alive() then
+				local push_force = 200
+				local up_force = 300
+
+				-- Push backwards
+				local aim_vec = self:GetAimVector( )
+				local angle = math.atan2( aim_vec.y, aim_vec.x )
+				local force_vec = -push_force * Vector( math.cos( angle ), math.sin( angle ), 0 ) + Vector( 0, 0, up_force )
+
+				self:SetVelocity( force_vec )
+				self:UnstuckMessage( Unstuck.Enumeration.Message.UNSTUCK )
+			end
+		end)
 	end
  
 end

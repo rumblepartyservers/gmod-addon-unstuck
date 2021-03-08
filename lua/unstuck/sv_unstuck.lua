@@ -55,7 +55,7 @@ function Unstuck.Start( ply )
 			ply:UnstuckMessage( Unstuck.Enumeration.Message.UNSTUCK_ATTEMPT )
 		end
 	else
-		ply:UnstuckMessage( Unstuck.Enumeration.Message.UNSTUCK )
+		ply:PushOnUnstuck( )
 	end
 
 	-- Alert staff of any attempts
