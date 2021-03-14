@@ -63,6 +63,7 @@ Unstuck.Enumeration = {
 		FAILED = 7,
 		RESPAWNING = 8,
 		RESPAWN_FAILED = 9,
+		CANT_USE = 10,
 	},
 	
 	PositionTesting = {
@@ -86,12 +87,13 @@ Unstuck.Dictionary = {
 	[Unstuck.Enumeration.Message.UNSTUCK] = "You should be unstuck!",
 	[Unstuck.Enumeration.Message.UNSTUCK_ATTEMPT] = "You are stuck, trying to free you...",
 	[Unstuck.Enumeration.Message.ADMIN_NOTIFY] = " used the Unstuck command.", // The players name will be prefixed with this string
-	[Unstuck.Enumeration.Message.NOT_ALIVE] = "You must be alive and out of vehicles to use this command!",
+	[Unstuck.Enumeration.Message.NOT_ALIVE] = "You must be alive to use this command!",
 	[Unstuck.Enumeration.Message.ARRESTED] = "You are arrested!",
 	[Unstuck.Enumeration.Message.COOLDOWN] = "Cooldown period still active! Wait a bit!",
 	[Unstuck.Enumeration.Message.FAILED] = "Sorry, I failed.",
 	[Unstuck.Enumeration.Message.RESPAWNING] = "Respawning in "..Unstuck.Configuration.RespawnTimer.." seconds.",
 	[Unstuck.Enumeration.Message.RESPAWN_FAILED] = "Respawn canceled. Your are dead.",
+	[Unstuck.Enumeration.Message.CANT_USE] = "You can't use this command at the moment.",
 }
 
 
@@ -128,7 +130,13 @@ if SERVER then
 			(cheatsy)
 	--]]------------------------------------------------
 	function Player:PushOnUnstuck()
-		if self:GetMoveType() == MOVETYPE_OBSERVER or not self:Alive() then
+		if self:GetMoveType() == MOVETYPE_OBSERVER || !self:Alive() then
+			self:UnstuckMessage( Unstuck.Enumeration.Message.NOT_ALIVE )
+			return
+		end
+
+		if self:IsFlagSet( FL_FROZEN ) then
+			self:UnstuckMessage( Unstuck.Enumeration.Message.CANT_USE )
 			return
 		end
 		
@@ -136,7 +144,12 @@ if SERVER then
 		self:Freeze( true )
 		
 		timer.Create( "UnstuckPush", 3, 1, function()
-			if not self then
+			if !self:IsValid() then
+				return
+			end
+
+			if self.isBlind then
+				self:UnstuckMessage( Unstuck.Enumeration.Message.FAILED )
 				return
 			end
 
